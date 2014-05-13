@@ -21,3 +21,12 @@
   (enlive/sniptest page
     [:pre :code] highlight
     [:pre :code] #(assoc-in % [:attrs :class] "codehilite")))
+
+(defn drop-comments [html replace-with]  
+  (let [res (-> html java.io.StringReader. enlive/html-resource)
+        without-comments (enlive/transform res [:section] (enlive/substitute (or (-> replace-with java.io.StringReader. enlive/html-resource) "")))]
+    (apply str (enlive/emit* without-comments))))
+
+(defn replace-comments [html replace-with]
+  (let [replacement (-> replace-with java.io.StringReader. enlive/html-resource)]
+    (enlive/sniptest html [:section] (fn [c] replacement))))

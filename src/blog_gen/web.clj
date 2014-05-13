@@ -1,5 +1,5 @@
 (ns blog-gen.web
-  (:require [blog-gen.highlight :refer [highlight-code-blocks]]
+  (:require [blog-gen.highlight :refer [highlight-code-blocks replace-comments]]
             [optimus.link :as link]
             [optimus.assets :as assets]
             [optimus.optimizations :as optimizations]
@@ -28,7 +28,20 @@
 (defn format-year [date]
   (tf/unparse yformat date))
 
-(defn layout-page [request page {:keys [date title tags]}]
+(def old-style-posts
+  ["rx-the-importance-of-honoring-unsubscribe"
+   "rxPlay-making-iteratees-and-observables-play-nice"
+   "anatomy-of-a-clojure-macro"
+   "escaping-callback-hell-with-core-async"
+   "action-composition-auth"
+   "anorm-pk-json"])
+
+(defn get-disqus-path [path]
+  (if (some #(re-seq (re-pattern %) path) old-style-posts)
+    (str/replace #"blog" "code")
+    path))
+
+(defn layout-page [request [path page] {:keys [date title tags]}]
   (html5
     [:head
       [:meta {:name "HandheldFriendly" :content "True"}]
@@ -48,10 +61,12 @@
       [:link {:href "http://fonts.googleapis.com/css?family=Sorts+Mill+Goudy" :rel "stylesheet" :type "text/css"}]
       [:link {:href "http://fonts.googleapis.com/css?family=EB+Garamond" :rel "stylesheet" :type "text/css"}]
       [:link {:href "http://fonts.googleapis.com/css?family=Della+Respira" :rel "stylesheet" :type "text/css"}]]
+    
     [:body
-      [:img {:style "position: absolute; top: 0; right: 0; border: 0;"
-             :src "https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png"
-             :alt "Fork me on GitHub"}]
+     [:a {:href "https://github.com/gilbertw1"}
+        [:img {:style "position: absolute; top: 0; right: 0; border: 0;"
+               :src "https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png"
+               :alt "Fork me on GitHub"}]]
      
       [:header {:role "banner"}
         [:hgroup 
@@ -74,10 +89,24 @@
               (if date
                 [:p.meta
                   [:time {:datetime date} (format-month date) " " (format-day date) [:span "th"] ", " (format-year date)]])]
-            [:div.body.entry-content page]]]]]))
+            [:div.body.entry-content page]
+            (when date
+              [:section
+                [:h1 "Comments"
+                  [:div#disqus_thread {:aria-live "polite"}]
+                  [:script {:type "text/javascript"}
+                    (str "var disqus_shortname = 'bryangilbertsblogbryancodes';
+                          var disqus_url = 'http://bryangilbert.com"  "';
+                          (function() {
+                              var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                              dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+                              (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                          })();")]
+                  [:noscript "Please enable JavaScript to view the " [:a {:href "http://disqus.com/?ref_noscript"} "comments powered by Disqus."]]
+                  [:a.dsq-brlink {:href "http://disqus.com"} "comments powered by " [:span.logo-disqus "Disqus"]]]])]]]]))
 
 (defn partial-pages [pages]
-  (zipmap (keys pages) (map #(fn [req] (layout-page req %)) (vals pages))))
+  (zipmap (keys pages) (map #(fn [req] (layout-page req %)) pages)))
 
 (def pegdown-options
   [:autolinks :fenced-code-blocks :strikethrough])
@@ -108,8 +137,8 @@
 (defn remove-meta [page]
   (str/replace page #"(?is)^---.*?---" ""))
 
-(defn render-post-page [[name page]]
-  (fn [req] (layout-page req (md/to-html (remove-meta page) pegdown-options) (extract-meta name page))))
+(defn render-post-page [[path page]]
+  (fn [req] (layout-page req [path (md/to-html (remove-meta page) pegdown-options)] (extract-meta path page))))
 
 (defn prepare-post-path [post-name]
   (-> post-name
@@ -152,11 +181,18 @@
     [:div#blog-archives
       (map archive-group post-groups)]))
 
+(def home-footer-html
+  (html5
+    [:div.pagination
+      [:a {:href "/archive"} "Blog Archive"]]))
+
 (defn home-page [posts]
-  (->> posts (sort-by first) reverse first second))
+  (let [page (->> posts (sort-by first) reverse first second)]
+    (fn [req]
+      (replace-comments (page req) home-footer-html))))
 
 (defn archive-page [posts]
-  (fn [req] (layout-page req (archive-layout posts) {:title "Archive"})))
+  (fn [req] (layout-page req ["/archive" (archive-layout posts)] {:title "Archive"})))
 
 (defn create-dynamic-pages [posts]
   {"/index.html" (home-page posts)
@@ -175,7 +211,6 @@
       highlight-code-blocks))
 
 (defn prepare-pages [pages]
-  ;(doseq [[path page] pages] (println path " - " (nil? page)))
   (zipmap (keys pages) (map #(partial prepare-page %) (vals pages))))
 
 (defn get-pages []

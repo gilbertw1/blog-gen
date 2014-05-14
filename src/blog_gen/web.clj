@@ -11,7 +11,8 @@
             [hiccup.page :refer [html5]]
             [me.raynes.cegdown :as md]
             [stasis.core :as stasis]
-            [clj-time.format :as tf]))
+            [clj-time.format :as tf]
+            [clj-time.core :as t]))
 
 (def export-dir "dist")
 
@@ -55,7 +56,6 @@
       [:meta {:charset "utf-8"}]
       [:title "Random.next()"]      
       [:link {:rel "stylesheet" :href (link/file-path request "/css/theme.css")}]
-      [:link {:rel "stylesheet" :href (link/file-path request "/css/gilbertw1.css")}]
       [:link {:rel "stylesheet" :href (link/file-path request "/css/zenburn-custom.css")}]
       [:link {:href "http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" :rel "stylesheet" :type "text/css"}]
       [:link {:href "http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" :rel "stylesheet" :type "text/css"}]
@@ -85,7 +85,7 @@
           [:li [:a {:href "/archive"} "Archive"]]
           [:li [:a {:href "http://twitter.com/bryangilbert"} "Twitter"]]
           [:li [:a {:href "http://linkedin.com/in/williamgilbert/"} "LinkedIn"]]
-          [:li [:a {:href "mailto:gilbertw1@gmail.com"} "Email"]]]]
+          [:li [:a {:href "/resume.html"} "Resume"]]]]
       
       [:div#main
         [:div#content
@@ -109,7 +109,12 @@
                               (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
                           })();")]
                   [:noscript "Please enable JavaScript to view the " [:a {:href "http://disqus.com/?ref_noscript"} "comments powered by Disqus."]]
-                  [:a.dsq-brlink {:href "http://disqus.com"} "comments powered by " [:span.logo-disqus "Disqus"]]]])]]]]))
+                  [:a.dsq-brlink {:href "http://disqus.com"} "comments powered by " [:span.logo-disqus "Disqus"]]]])]]]
+      [:footer {:role "contentinfo"}
+        [:p 
+          "Website Copyright © " (t/year (t/now)) " - Bryan Gilbert &nbsp; | &nbsp; "
+          [:span.credit "Powered by " [:a {:href "http://github.com/gilbertw1/blog-gen"} " a Little Side Project"]
+          " &nbsp; | &nbsp; Mostly Themed with " [:a {:href "https://github.com/TheChymera/Koenigspress"} "Königspress"]]]]]))
 
 (defn partial-pages [pages]
   (zipmap (keys pages) (map #(fn [req] (layout-page req %)) pages)))

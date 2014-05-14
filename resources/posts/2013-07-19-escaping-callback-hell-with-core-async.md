@@ -24,10 +24,10 @@ I'd been reading a lot about core.async and it seemed like the perfect fit.
 extremely trivial javascript example that prints a file:
 
 ```javascript
-    var fs = require("fs");
-    fs.readFile("file", "utf8", function(err, res) {
-        console.log(res)    
-    });
+  var fs = require("fs");
+  fs.readFile("file", "utf8", function(err, res) {
+    console.log(res)  
+  });
 ```
 
 This is a pretty basic example illustrating the use of a callback function to handle flow control. Once the file has been fully read
@@ -36,10 +36,10 @@ the callback will be invoked with the results and we can continue on to do what 
 Here is how it can be rewritten using the Asynchronize macro:
 
 ```clj
-    (def fs (node/require "fs"))
-    (asynchronize
-      (def res (.readFile fs "file" "utf8" ...))
-      (console/log res)))
+  (def fs (node/require "fs"))
+  (asynchronize
+    (def res (.readFile fs "file" "utf8" ...))
+    (console/log res)))
 ```
 
 Not too bad huh? Notice the '...' in the above code, the asynchonize macro uses this placeholder symbol to tell which functions require a 
@@ -48,29 +48,29 @@ callback. This was inspired by [To Be Continued](https://github.com/gregspurrier
 How about reading three files?
 
 ```clj
-    (asynchronize
-      (def f1 (.readFile fs "file1" "utf8" ...))
-      (def f2 (.readFile fs "file2" "utf8" ...))
-      (def f3 (.readFile fs "file3" "utf8" ...))
-      (console/log f1)
-      (console/log f2)
-      (console/log f3)))
+  (asynchronize
+    (def f1 (.readFile fs "file1" "utf8" ...))
+    (def f2 (.readFile fs "file2" "utf8" ...))
+    (def f3 (.readFile fs "file3" "utf8" ...))
+    (console/log f1)
+    (console/log f2)
+    (console/log f3)))
 ```
 
 That's a little nice, but we can still do this much better
 
 ```clj
-    (asynchronize
-      (def all-contents (map #(.readFile fs % ...) ["file1" "file2" "file3"]))
-      (doseq [content all-contents] (console/log content)))
+  (asynchronize
+    (def all-contents (map #(.readFile fs % ...) ["file1" "file2" "file3"]))
+    (doseq [content all-contents] (console/log content)))
 ```
 
 Asynchronize also works properly in a nested fashion:
 
 ```clj
-    (asynchronize
-        (def contents (.readFile fs (.readFile fs (.readFile fs "file" "utf8" ...) "utf8" ...) "utf8" ...))
-        (console/log contents)))
+  (asynchronize
+    (def contents (.readFile fs (.readFile fs (.readFile fs "file" "utf8" ...) "utf8" ...) "utf8" ...))
+    (console/log contents)))
 ```
 
 The way the above example works is it reads the content of a file named "file" containing the path to another file,
@@ -78,13 +78,13 @@ it then reads the content of that file again containing another file, which it r
 console. If you were to write this in javascript, (semantically) it'd look like:
 
 ```javascript
-    fs.readFile("file", "utf8", function(err, res) {
-        fs.readFile(res, "utf8", function(err, res) {
-            fs.readFile(res, "utf8", function(err, res) {
-                console.log(res);
-            });
-        });
+  fs.readFile("file", "utf8", function(err, res) {
+    fs.readFile(res, "utf8", function(err, res) {
+      fs.readFile(res, "utf8", function(err, res) {
+        console.log(res);
+      });
     });
+  });
 ```
 
 Pretty impressive stuff right? So, you may ask, how many lines of code is this magical macro? 100 lines? 1000 lines?....10000 lines??
@@ -100,9 +100,9 @@ programming using channels. It's modeled closely after go's concurrency model (g
 A quick example containing everything you'll need to know about core.async to understand how asynchronize works
 
 ```clj
-    (let [c (chan)]
-      (go (>! c "hello!"))
-      (go (console/log (<! c))))
+  (let [c (chan)]
+    (go (>! c "hello!"))
+    (go (console/log (<! c))))
 ```
 
 In the above example we are creating a channel and assigning it to the variable c. We are then using the go macro which asynchronously
@@ -121,9 +121,9 @@ At it's heart the asynchronize macro is extremely simple. The first thing it doe
 and wraps the code in a go block:
 
 ```clj
-    (let [c (chan)] ;; uses a unique generated symbol for c
-      (go
-        (code))) ;; code includes all of the statements passed to the macro
+  (let [c (chan)] ;; uses a unique generated symbol for c
+    (go
+    (code))) ;; code includes all of the statements passed to the macro
 ```
 
 We'll use this channel throughout the macro to coordinate between different callbacks and the main go block created here. Next we search through
@@ -131,20 +131,20 @@ all of the forms for ones ending with "..." and convert them into a do block whi
 itself while waiting for a value in the main channel:
 
 ```clj
-    ;; Before
-    (.readFile fs "file" "utf8" ...)
+  ;; Before
+  (.readFile fs "file" "utf8" ...)
 
-    ;; After
-    (do
-      (.readFile fs "file" "utf8" generated-callback) ;; note generated-callback
-      (<! c))
+  ;; After
+  (do
+    (.readFile fs "file" "utf8" generated-callback) ;; note generated-callback
+    (<! c))
 ```
 
 Notice the generated-callback, this is a very simple function that looks like:
 
 ```clj
-    (fn [err res]
-      (>! c res))
+  (fn [err res]
+    (>! c res))
 ```
 
 This callback basically writes the successful result into the channel. Once the value is written into the channel the original go block will unsuspend

@@ -12,9 +12,9 @@ One of the interesting properties of both observables and enumerators is the fac
 Terminating data streams when a listener is no longer attached is a critical component of reactive programming. The reason being that it is rather common to deal with potentially infinite streams of data when programming reactively, and an implementation that does not clean up streams that are no longer being consumed can cause major problems. A trivial example using an infinite stream is the following:
 
 ```scala
-    val squareObs = Observable.interval(10 millis).map(x => x*x).take(10)
-    squareObs.subscribe(println(_))
-      // => 0 1 4 9 16 25 36 49 64 81
+  val squareObs = Observable.interval(10 millis).map(x => x*x).take(10)
+  squareObs.subscribe(println(_))
+    // => 0 1 4 9 16 25 36 49 64 81
 ```
 
 Notice that ```Observable.interval(10 millis)``` creates an observable that will produce an infinte stream of incrementing long values starting from 0, yet we only end up producing 10 values. This is because of the method call ```.take(10)``` that we use to create a new Observable which now will only produce 10 items and then terminate. If a way to unsubscribe is not provided by *every* observable created in this chain (interval, map, take), then there will be no way to terminate a stream of events back to it's source when a listener is no longer interested in receiving data from this stream.
@@ -54,21 +54,19 @@ Now that we've talked about how unsubscription works in both RxJava and Play Ite
 Let's start with the ```Enumerator -> Observable``` conversion:
 
 ```scala
-    implicit def enumerator2Observable[T](enum: Enumerator[T]): Observable[T] = {
-      Observable({ observer: Observer[T] =>
-        var cancelled = false                                                       // 1
-        val cancellableEnum = enum through Enumeratee.breakE[T](_ => cancelled)     // 2
-
-        cancellableEnum (                                                           // 3
-          Iteratee.foreach(observer.onNext(_))
-        ).onComplete {
-          case Success(_) => observer.onCompleted()
-          case Failure(e) => observer.onError(e)
-        }
-
-        new Subscription { override def unsubscribe() = { cancelled = true } }      // 4
-      })
-    }
+  implicit def enumerator2Observable[T](enum: Enumerator[T]): Observable[T] = {
+    Observable({ observer: Observer[T] =>
+      var cancelled = false                                                       // 1
+      val cancellableEnum = enum through Enumeratee.breakE[T](_ => cancelled)     // 2
+       cancellableEnum (                                                           // 3
+        Iteratee.foreach(observer.onNext(_))
+      ).onComplete {
+        case Success(_) => observer.onCompleted()
+        case Failure(e) => observer.onError(e)
+      }
+       new Subscription { override def unsubscribe() = { cancelled = true } }      // 4
+    })
+  }
 ```
 
 
@@ -86,22 +84,21 @@ Now let's look at improving our ```Observable -> Enumerator``` conversion. This 
 To illustrate this point, let's look at a naive solution (which I initially wrote :) ):
 
 ```scala
-    implicit def observable2Enumerator[T](obs: Observable[T]): Enumerator[T] = {
-      var subscription: Option[Subscription] = None                               // 1
-      Concurrent.unicast[T](onStart = { chan =>
-        subscription = Some(obs.subscribe(new ChannelObserver(chan)))             // 2
-      }, onComplete = {
-        subscription.foreach(_.unsubscribe)                                       // 3
-      }), onError = { (_,_) =>
-        subscription.foreach(_.unsubscribe)                                       // 4
-      }
+  implicit def observable2Enumerator[T](obs: Observable[T]): Enumerator[T] = {
+    var subscription: Option[Subscription] = None                               // 1
+    Concurrent.unicast[T](onStart = { chan =>
+      subscription = Some(obs.subscribe(new ChannelObserver(chan)))             // 2
+    }, onComplete = {
+      subscription.foreach(_.unsubscribe)                                       // 3
+    }), onError = { (_,_) =>
+      subscription.foreach(_.unsubscribe)                                       // 4
     }
-  
-    class ChannelObserver[T](chan: Channel[T]) extends rx.Observer[T] {
-      def onNext(arg: T): Unit = chan.push(arg)
-      def onCompleted(): Unit = chan.end()
-      def onError(e: Throwable): Unit = chan.end(e)
-    }
+  }
+     class ChannelObserver[T](chan: Channel[T]) extends rx.Observer[T] {
+    def onNext(arg: T): Unit = chan.push(arg)
+    def onCompleted(): Unit = chan.end()
+    def onError(e: Throwable): Unit = chan.end(e)
+  }
 ```
 
 
@@ -117,20 +114,19 @@ Ok, so how do we create a thread safe enumerator that we can unsubscribe from? W
 Here's what the new conversion function looks like:
 
 ```scala
-    implicit def observable2Enumerator[T](obs: Observable[T]): Enumerator[T] = {
-      unicast[T] { (chan) =>                                                      // 1
-        val subscription = obs.subscribe(new ChannelObserver(chan))               // 2
-        val onComplete = { () => subscription.unsubscribe }                       // 3
-        val onError = { (_: String, _: Input[T]) => subscription.unsubscribe }    // 4
-        (onComplete, onError)                                                     // 5
-      }
+  implicit def observable2Enumerator[T](obs: Observable[T]): Enumerator[T] = {
+    unicast[T] { (chan) =>                                                      // 1
+      val subscription = obs.subscribe(new ChannelObserver(chan))               // 2
+      val onComplete = { () => subscription.unsubscribe }                       // 3
+      val onError = { (_: String, _: Input[T]) => subscription.unsubscribe }    // 4
+      (onComplete, onError)                                                     // 5
     }
-  
-    class ChannelObserver[T](chan: Channel[T]) extends rx.Observer[T] {
-      def onNext(arg: T): Unit = chan.push(arg)
-      def onCompleted(): Unit = chan.end()
-      def onError(e: Throwable): Unit = chan.end(e)
-    }
+  }
+     class ChannelObserver[T](chan: Channel[T]) extends rx.Observer[T] {
+    def onNext(arg: T): Unit = chan.push(arg)
+    def onCompleted(): Unit = chan.end()
+    def onError(e: Throwable): Unit = chan.end(e)
+  }
 ```
 
 

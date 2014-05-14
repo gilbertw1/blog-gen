@@ -13,11 +13,11 @@ additional code.
 For example, take this class:
 
 ```scala
-    case class User (
-        firstName: String,
-        lastName: String,
-        age: Int
-    )
+  case class User (
+    firstName: String,
+    lastName: String,
+    age: Int
+  )
 ```
 
 We can have a format generated for this class at runtime using Json inception:
@@ -29,14 +29,14 @@ We can have a format generated for this class at runtime using Json inception:
 With the above format in implicit scope, converting a user to and from json is as easy as pie:
 
 ```scala
-    import play.api.libs.json.Json._
+  import play.api.libs.json.Json._
 
-    val user = User("Bryan", "Gilbert", 27) 
-    // => User(Bryan,Gilbert,27)
-    val userJson = stringify(toJson(user)) 
-    // => {"firstName":"Bryan","lastName":"Gilbert","age":27}
-    val newUser = parse(userJson).as[User] 
-    // => User = User(Bryan,Gilbert,27)
+  val user = User("Bryan", "Gilbert", 27) 
+  // => User(Bryan,Gilbert,27)
+  val userJson = stringify(toJson(user)) 
+  // => {"firstName":"Bryan","lastName":"Gilbert","age":27}
+  val newUser = parse(userJson).as[User] 
+  // => User = User(Bryan,Gilbert,27)
 ```
 
 All of the above works entirely as expected. Nice and Simple. However, there is one small hiccup when trying to use a case
@@ -46,12 +46,12 @@ Pk is an algebraic datatype of Pk\[T\] that can be either NotAssigned or it can 
 So now we can have a User class that corresponds to a database table User:
 
 ```scala
-    case class User (
-        id: Pk[Long] =  NotAssigned,
-        firstName: String,
-        lastName: String,
-        age: Int
-    )
+  case class User (
+    id: Pk[Long] =  NotAssigned,
+    firstName: String,
+    lastName: String,
+    age: Int
+  )
 ```
 
 This allows us to instantiate a user directly from the database using anorm, and properly represent the primary key both in cases 
@@ -61,35 +61,35 @@ This is all great stuff, however we can no longer convert the User class as easi
 because there is no format in implict scope that knows how to read and write the Pk type.
 
 ```scala
-    implicit val userFormat = format[User] 
-    // => error: No implicit format for anorm.Pk[Long] available.
+  implicit val userFormat = format[User] 
+  // => error: No implicit format for anorm.Pk[Long] available.
 ```
 
 The solution to this problem is to create a format for Pk that will properly allow serialization and deserialization:
 
 ```scala
-    implicit object PkFormat extends Format[Pk[Long]] {
-        def reads(json: JsValue): JsResult[Pk[Long]] = JsSuccess (
-            json.asOpt[Long].map(id => Id(id)).getOrElse(NotAssigned)
-        )
-        def writes(id: Pk[Long]): JsValue = id.map(JsNumber(_)).getOrElse(JsNull)
-    }
+  implicit object PkFormat extends Format[Pk[Long]] {
+    def reads(json: JsValue): JsResult[Pk[Long]] = JsSuccess (
+        json.asOpt[Long].map(id => Id(id)).getOrElse(NotAssigned)
+    )
+    def writes(id: Pk[Long]): JsValue = id.map(JsNumber(_)).getOrElse(JsNull)
+  }
 
-    implicit val userFormat = format[User]
+  implicit val userFormat = format[User]
 
-    val user = User(Id(1), "Bryan", "Gilbert", 27) 
-    // => User(1,Bryan,Gilbert,27)
-    val userJson = stringify(toJson(user)) 
-    // => {"id":1,"firstName":"Bryan","lastName":"Gilbert","age":27}
-    val newUser = parse(userJson).as[User] 
-    // => User(1,Bryan,Gilbert,27)
+  val user = User(Id(1), "Bryan", "Gilbert", 27) 
+  // => User(1,Bryan,Gilbert,27)
+  val userJson = stringify(toJson(user)) 
+  // => {"id":1,"firstName":"Bryan","lastName":"Gilbert","age":27}
+  val newUser = parse(userJson).as[User] 
+  // => User(1,Bryan,Gilbert,27)
 
-    val user = User(NotAssigned, "Bryan", "Gilbert", 27) 
-    // => User(NotAssigned,Bryan,Gilbert,27)
-    val userJson = stringify(toJson(user)) 
-    // => {"id":null,"firstName":"Bryan","lastName":"Gilbert","age":27}
-    val newUser = parse(userJson).as[User] 
-    // => User(NotAssigned,Bryan,Gilbert,27)
+  val user = User(NotAssigned, "Bryan", "Gilbert", 27) 
+  // => User(NotAssigned,Bryan,Gilbert,27)
+  val userJson = stringify(toJson(user)) 
+  // => {"id":null,"firstName":"Bryan","lastName":"Gilbert","age":27}
+  val newUser = parse(userJson).as[User] 
+  // => User(NotAssigned,Bryan,Gilbert,27)
 ```
 
 Note that I wasn't completely satisfied with outputing null in the Json in the case of NotAssigned, however it seemed

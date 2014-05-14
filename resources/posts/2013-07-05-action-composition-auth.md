@@ -14,31 +14,31 @@ case, but action composition is flexible enough to handle many different scenari
 So, what is action composition? Well let's start with a "normal" action.
 
 ```scala
-    def normalAction = Action { request =>
-        // Normal Stuff
-        Ok("Normal Response")
-    }
+  def normalAction = Action { request =>
+    // Normal Stuff
+    Ok("Normal Response")
+  }
 ```
 
 An action is basically a function of type: 
 
 ```scala
-    (Request[A] => Result)
+  (Request[A] => Result)
 ```
 
 Action composition is facilitated by providing a higher order function that takes an Action function
 and returns an Action function. Pretty simple right?
 
 ```scala
-    def EnhancedAction(f: (Request[AnyContent] => Result)) = Action { request =>
-        // Do Something
-        f(request)
-    }
+  def EnhancedAction(f: (Request[AnyContent] => Result)) = Action { request =>
+    // Do Something
+    f(request)
+  }
 
-    def enhancedNormalAction = EnhancedAction { request =>
-        // Normal Stuff
-        Ok("Normal Response")
-    }
+  def enhancedNormalAction = EnhancedAction { request =>
+    // Normal Stuff
+    Ok("Normal Response")
+  }
 ```
 
 This allows us to do almost anything before and/or after calling an action function including high-jacking the response
@@ -67,24 +67,24 @@ All source code for this project can be found at [my github repo](https://github
 First thing we'll start with is the routes file, this will give us a sense of the structure of the application:
 
 ```scala
-    # Application Base
-    GET     /                                                           controllers.Application.index
-    GET     /fbOAuth                                                    controllers.Application.fbOAuth
-    GET     /fbOAuthReturn                                              controllers.Application.fbOAuthReturn(state: String, code: String)
+  # Application Base
+  GET   /                               controllers.Application.index
+  GET   /fbOAuth                          controllers.Application.fbOAuth
+  GET   /fbOAuthReturn                        controllers.Application.fbOAuthReturn(state: String, code: String)
 
-    # Companies
-    GET     /companies                                                  controllers.Companies.list
-    GET     /companies/create                                           controllers.Companies.create()
-    GET     /companies/:id                                              controllers.Companies.view(id: Long)
-    GET     /companies/:id/update                                       controllers.Companies.update(id: Long)
-    GET     /companies/:id/admin                                        controllers.Companies.admin(id: Long)
+  # Companies
+  GET   /companies                          controllers.Companies.list
+  GET   /companies/create                       controllers.Companies.create()
+  GET   /companies/:id                        controllers.Companies.view(id: Long)
+  GET   /companies/:id/update                     controllers.Companies.update(id: Long)
+  GET   /companies/:id/admin                    controllers.Companies.admin(id: Long)
 
-    # Surveys
-    GET     /companies/:cid/surveys                                     controllers.Surveys.list(cid: Long)
-    GET     /companies/:cid/surveys/create                              controllers.Surveys.create(cid: Long)
-    GET     /companies/:cid/surveys/:id                                 controllers.Surveys.view(cid: Long, id: Long)
-    GET     /companies/:cid/surveys/:id/update                          controllers.Surveys.update(cid: Long, id: Long)
-    GET     /companies/:cid/surveys/:id/fillOut                         controllers.Surveys.fillOut(cid: Long, id: Long)  
+  # Surveys
+  GET   /companies/:cid/surveys                   controllers.Surveys.list(cid: Long)
+  GET   /companies/:cid/surveys/create                controllers.Surveys.create(cid: Long)
+  GET   /companies/:cid/surveys/:id                 controllers.Surveys.view(cid: Long, id: Long)
+  GET   /companies/:cid/surveys/:id/update              controllers.Surveys.update(cid: Long, id: Long)
+  GET   /companies/:cid/surveys/:id/fillOut             controllers.Surveys.fillOut(cid: Long, id: Long)  
 ```
 
 
@@ -101,27 +101,27 @@ Additionally it will add the user's facebook information to the signed session c
 As with all of the action composers we will create, they will be created in a trait that all other controllers will be extending.
 
 ```scala
-    def FacebookAuthenticated(f: FacebookAuthenticatedRequest => Result) = {
-        Action { request =>
-            val session = request.session                                           // 1
-            Facebook.retrieveFacebookUserFromSession(session) match {               // 2
-                case Some(fbUserInfo: FacebookUser) => 
-                    f(FacebookAuthenticatedRequest(fbUserInfo, request))            // 3
-                case None => 
-                    val newSession = session + ("PostOAuthUrl" -> request.uri)      // 4
-                    Redirect(routes.Application.fbOAuth()).withSession(newSession)
-            }
-        }
+  def FacebookAuthenticated(f: FacebookAuthenticatedRequest => Result) = {
+    Action { request =>
+      val session = request.session                       // 1
+      Facebook.retrieveFacebookUserFromSession(session) match {         // 2
+        case Some(fbUserInfo: FacebookUser) => 
+          f(FacebookAuthenticatedRequest(fbUserInfo, request))      // 3
+        case None => 
+          val newSession = session + ("PostOAuthUrl" -> request.uri)    // 4
+          Redirect(routes.Application.fbOAuth()).withSession(newSession)
+      }
     }
+  }
 
-    case class FacebookAuthenticatedRequest (val fbUserInfo: FacebookUser, request: Request[AnyContent]) 
-        extends WrappedRequest(request)
+  case class FacebookAuthenticatedRequest (val fbUserInfo: FacebookUser, request: Request[AnyContent]) 
+    extends WrappedRequest(request)
 ```
 
 As can be seen in the above code sample, here we are creating a function that takes another function of type: 
 
 ```scala
-    (FacebookAuthenticatedRequest => Result) 
+  (FacebookAuthenticatedRequest => Result) 
 ```
 
 I'll mention now that a wrapped request is a request that can be extended to provide additional values. This way we'll be able to easily
@@ -142,12 +142,12 @@ If you look at the source code, you'll see that at the end of the facebook authe
 the app:
 
 ```scala
-    class MyController extends BaseController {
-        def facebookProtectedHome = FacebookAuthenticated { implicit request =>
-            // We can be confident that we are facebook authenticated in here.
-            Ok(html.views.facebookAuthenticatedView())
-        }
+  class MyController extends BaseController {
+    def facebookProtectedHome = FacebookAuthenticated { implicit request =>
+      // We can be confident that we are facebook authenticated in here.
+      Ok(html.views.facebookAuthenticatedView())
     }
+  }
 ```
 
 This is pretty simple right? We've now implemented basic facebook authentication within our app. You may notice that I've marked the 
@@ -159,23 +159,23 @@ So, did I mention that action composers compose as well? Well now lets implement
 "FacebookAuthenticated" composer:
 
 ```scala
-    def UserAuthenticated(f: UserAuthenticatedRequest => Result) = {
-        FacebookAuthenticated { request =>
-            request.session.get("authenticatedUser") match {
-                case Some(userJson) =>
-                    f(UserAuthenticatedRequest(User.deserialize(userJson), request))
-                case None =>
-                    val fbId = request.fbUserInfo.id
-                    val user = User.findByFacebookId(fbId).getOrElse(createUserFromFacebookUser(request.fbUserInfo))
-                    f(UserAuthenticatedRequest(user, request)).asInstanceOf[PlainResult].withSession (
-                        request.session + ("authenticatedUser" -> User.serialize(user))
-                    )
-            }
-        }
+  def UserAuthenticated(f: UserAuthenticatedRequest => Result) = {
+    FacebookAuthenticated { request =>
+      request.session.get("authenticatedUser") match {
+        case Some(userJson) =>
+          f(UserAuthenticatedRequest(User.deserialize(userJson), request))
+        case None =>
+          val fbId = request.fbUserInfo.id
+          val user = User.findByFacebookId(fbId).getOrElse(createUserFromFacebookUser(request.fbUserInfo))
+          f(UserAuthenticatedRequest(user, request)).asInstanceOf[PlainResult].withSession (
+            request.session + ("authenticatedUser" -> User.serialize(user))
+          )
+      }
     }
+  }
 
-    case class UserAuthenticatedRequest (val user: User, request: Request[AnyContent]) 
-        extends WrappedRequest(request)
+  case class UserAuthenticatedRequest (val user: User, request: Request[AnyContent]) 
+    extends WrappedRequest(request)
 ```
 
 You'll notice that this action composer is in a very similar vein to the "FacebookAuthenticated" composer. It basically
@@ -186,12 +186,12 @@ and then forwards to the action.
 This can be used in our application to ensure a user is authenticated before viewing a list of companies in our system:
 
 ```scala
-    object Companies extends BaseController {
-        def list = UserAuthenticated { implicit request =>
-            // User is created and / or authenticated
-            Ok(views.html.company.list(Company.all()))
-        }
+  object Companies extends BaseController {
+    def list = UserAuthenticated { implicit request =>
+      // User is created and / or authenticated
+      Ok(views.html.company.list(Company.all()))
     }
+  }
 ```
 
 ## Authorization
@@ -201,48 +201,48 @@ need to create the rest of our endpoints now. We'll need to authorize at the com
 survey level:
 
 ```scala
-    def CompanyAdminAuthenticated(companyId: Long)(f: CompanyAdminAuthenticatedRequest => Result) = {
-        UserAuthenticated { request =>
-            val companyOpt = Company.findById(companyId)
-            val user = request.user
-            companyOpt match {
-                case Some(company) if User.isCompanyAdmin(user, company.id.get) => 
-                    f(CompanyAdminAuthenticatedRequest(user, company, request))
-                case _ => Unauthorized
-            }
-        }
+  def CompanyAdminAuthenticated(companyId: Long)(f: CompanyAdminAuthenticatedRequest => Result) = {
+    UserAuthenticated { request =>
+      val companyOpt = Company.findById(companyId)
+      val user = request.user
+      companyOpt match {
+        case Some(company) if User.isCompanyAdmin(user, company.id.get) => 
+          f(CompanyAdminAuthenticatedRequest(user, company, request))
+        case _ => Unauthorized
+      }
     }
+  }
 
-    def CompanyAuthenticated(companyId: Long)(f: CompanyAuthenticatedRequest => Result) = {
-        UserAuthenticated { request =>
-            val companyOpt = Company.findById(companyId)
-            val user = request.user
-            companyOpt match {
-                case Some(company) if User.isCompanyMember(user, company.id.get) => 
-                    f(CompanyAuthenticatedRequest(user, company, request))
-                case _ => Unauthorized
-            }
-        }
+  def CompanyAuthenticated(companyId: Long)(f: CompanyAuthenticatedRequest => Result) = {
+    UserAuthenticated { request =>
+      val companyOpt = Company.findById(companyId)
+      val user = request.user
+      companyOpt match {
+        case Some(company) if User.isCompanyMember(user, company.id.get) => 
+          f(CompanyAuthenticatedRequest(user, company, request))
+        case _ => Unauthorized
+      }
     }
+  }
 
-    def SurveyAuthenticated(companyId: Long, surveyId: Long)(f: SurveyAuthenticatedRequest => Result) = {
-        CompanyAuthenticated(companyId) { request =>
-            val surveyOpt = Survey.findById(surveyId)
-            val user = request.user
-            surveyOpt match {
-                case Some(survey) if User.canAccessSurvey(user, survey.id.get) => 
-                    f(SurveyAuthenticatedRequest(user, request.company, survey, request))
-                case _ => Unauthorized
-            }
-        }
+  def SurveyAuthenticated(companyId: Long, surveyId: Long)(f: SurveyAuthenticatedRequest => Result) = {
+    CompanyAuthenticated(companyId) { request =>
+      val surveyOpt = Survey.findById(surveyId)
+      val user = request.user
+      surveyOpt match {
+        case Some(survey) if User.canAccessSurvey(user, survey.id.get) => 
+          f(SurveyAuthenticatedRequest(user, request.company, survey, request))
+        case _ => Unauthorized
+      }
     }
+  }
 
-    case class SurveyAuthenticatedRequest (val user: User, val company: Company, val survey: Survey, request: Request[AnyContent]) 
-        extends WrappedRequest(request)
-    case class CompanyAuthenticatedRequest (val user: User, val company: Company, request: Request[AnyContent]) 
-        extends WrappedRequest(request)
-    case class CompanyAdminAuthenticatedRequest (val user: User, val company: Company, request: Request[AnyContent]) 
-        extends WrappedRequest(request)
+  case class SurveyAuthenticatedRequest (val user: User, val company: Company, val survey: Survey, request: Request[AnyContent]) 
+    extends WrappedRequest(request)
+  case class CompanyAuthenticatedRequest (val user: User, val company: Company, request: Request[AnyContent]) 
+    extends WrappedRequest(request)
+  case class CompanyAdminAuthenticatedRequest (val user: User, val company: Company, request: Request[AnyContent]) 
+    extends WrappedRequest(request)
 ```
 
 As you can see we're using currying to pass parameters to each composer as well as the action that we are composing. Addtionally we've created
@@ -255,20 +255,20 @@ on future invocations of this action composer.
 Each of these composers can simply be used as:
 
 ```scala
-    // In Companies Controller
-    def admin(id: Long) = CompanyAdminAuthenticated(id) { implicit request =>
-        Ok(views.html.company.admin())
-    }
+  // In Companies Controller
+  def admin(id: Long) = CompanyAdminAuthenticated(id) { implicit request =>
+    Ok(views.html.company.admin())
+  }
 
-    // In Companies Controller
-    def view(id: Long) = CompanyAuthenticated(id) { implicit request =>
-        Ok(views.html.company.view())
-    }
+  // In Companies Controller
+  def view(id: Long) = CompanyAuthenticated(id) { implicit request =>
+    Ok(views.html.company.view())
+  }
 
-    // In Surveys Controller
-    def fillOut(companyId: Long, surveyId: Long) = SurveyAuthenticated(companyId, surveyId) { implicit request =>
-        Ok(views.html.survey.fillOut())
-    }
+  // In Surveys Controller
+  def fillOut(companyId: Long, surveyId: Long) = SurveyAuthenticated(companyId, surveyId) { implicit request =>
+    Ok(views.html.survey.fillOut())
+  }
 ```
 
 As you can see at this point we can create a new Action that is either FacebookAuthenticated, UserAuthenticated, CompanyAdminAuthenticated,
@@ -287,33 +287,33 @@ This allows us to create views that have specific request types as implicit para
 views/company/list.scala.html:
 
 ```scala
-    @(companies: List[Company])(implicit request: UserAuthenticatedRequest) {
-        <h1>List Companies Page</h1>
-    }
+  @(companies: List[Company])(implicit request: UserAuthenticatedRequest) {
+    <h1>List Companies Page</h1>
+  }
 ```
 
 views/company/admin.scala.html:
 
 ```scala
-    @()(implicit request: CompanyAdminAuthenticatedRequest) {
-        <h1>Admin Page for @request.company.name</h1>
-    }
+  @()(implicit request: CompanyAdminAuthenticatedRequest) {
+    <h1>Admin Page for @request.company.name</h1>
+  }
 ```
 
 views/company/view.scala.html:
 
 ```scala
-    @()(implicit request: CompanyAuthenticatedRequest) {
-        <h1>View @request.company.name</h1>
-    }
+  @()(implicit request: CompanyAuthenticatedRequest) {
+    <h1>View @request.company.name</h1>
+  }
 ```
 
 views/survey/fillOut.scala.html:
 
 ```scala
-    @()(implicit request: SurveyAuthenticatedRequest) {
-        <h1>Fill out @request.survey.name for company @request.company.name</h1>
-    }
+  @()(implicit request: SurveyAuthenticatedRequest) {
+    <h1>Fill out @request.survey.name for company @request.company.name</h1>
+  }
 ```
 
 As you'll notice, each of these views declare what type of request they require. So, if we were to try for example to render the company

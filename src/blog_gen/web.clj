@@ -47,11 +47,6 @@
       (str/replace #"\.md$" "")
       (str/replace #"(\d\d\d\d)-(\d\d)-(\d\d)-" "blog/$1/$2/$3/")))
 
-<script>
-  
-
-</script>
-
 (defn layout-page [request [path page] {:keys [date title tags]}]
   (html5
     [:head

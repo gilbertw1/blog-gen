@@ -4,7 +4,7 @@ tags : [clojure, clojurescript, macros, tutorial]
 ---
 
 One of the great things about Clojure is the fact that we can (relatively) easily extend the language at compile time
-using macros. I've recently implemented (and [written about](http://bryangilbert.com/code/2013/07/19/escaping-callback-hell-with-core-async/))
+using macros. I've recently implemented (and [written about](blog/2013/07/19/escaping-callback-hell-with-core-async/))
 one such macro that creates a simple interface over node.js functions that require callbacks to continue the flow of execution.
 Using this macro as a basis I hope to walk through the entire process of creating a clojure macro from inception to implementation,
 and along the way cover everything that is required for you as a reader (and potentially being new to Clojure) to create a non-trivial
@@ -432,7 +432,7 @@ You can find the full macro [source code here](https://gist.github.com/gilbertw1
 ## Asynchronize
 
 Now that we have all the tools needed to create a macro, and have in fact created one of our very own, we are now equiped to walk through the source code of the asynchronize macro. If you haven't already
-please to a quick runthrough of my [post on asynchronize](http://bryangilbert.com/code/2013/07/19/escaping-callback-hell-with-core-async/) to understand what exactly it does.
+please to a quick runthrough of my [post on asynchronize](blog/2013/07/19/escaping-callback-hell-with-core-async/) to understand what exactly it does.
 
 There shouldn't be anything too surprising here, in fact asynchronize is not much longer than the threading macro we just created. I'll start off exactly the same as we did with the previous macro, except
 with a little less fan fare.

@@ -3,7 +3,7 @@ title : Rx: The Importance of Honoring Unsubscribe
 tags : [scala, rxJava, play2, iteratees]
 ---
 
-I recently wrote a [blog post](http://bryangilbert.com/code/2013/10/22/rxPlay-making-iteratees-and-observables-play-nice/) on the similarities between rxJava and Play iteratees and how they could be used seamlessly together using implicit conversions. While implementing either of these concepts in terms of the other was very useful in understanding how they both work and relate to each other, it turns out I was missing a very key compenent that was being lost in translation. While I was uncomfortable with the fact that I was not providing a way to unsubscribe from an observable created from an enumerator, I did not realize the gravity of not doing so. Thanks to Erik Meijer for pointing out that this is definitely [not good](https://twitter.com/headinthebox/status/393650594428104704), which is putting it mildly.
+I recently wrote a [blog post](blog/2013/10/22/rxPlay-making-iteratees-and-observables-play-nice) on the similarities between rxJava and Play iteratees and how they could be used seamlessly together using implicit conversions. While implementing either of these concepts in terms of the other was very useful in understanding how they both work and relate to each other, it turns out I was missing a very key compenent that was being lost in translation. While I was uncomfortable with the fact that I was not providing a way to unsubscribe from an observable created from an enumerator, I did not realize the gravity of not doing so. Thanks to Erik Meijer for pointing out that this is definitely [not good](https://twitter.com/headinthebox/status/393650594428104704), which is putting it mildly.
 
 ## Why does it matter?
 
@@ -47,7 +47,7 @@ This indicates upstream how the enumerator should behave. So, when we only want 
 
 ## Properly handling unsubscription
 
-Now that we've talked about how unsubscription works in both RxJava and Play Iteratees, let's take a stab at keeping those lines of communication open while performing our transformations. In these code examples I'm only going to cover the changes that I made to support unsubscription, for full context review [this post](http://bryangilbert.com/code/2013/10/22/rxPlay-making-iteratees-and-observables-play-nice/).
+Now that we've talked about how unsubscription works in both RxJava and Play Iteratees, let's take a stab at keeping those lines of communication open while performing our transformations. In these code examples I'm only going to cover the changes that I made to support unsubscription, for full context review [this post](blog/2013/10/22/rxPlay-making-iteratees-and-observables-play-nice).
 
 ### Enumerator -> Observable
 

@@ -38,8 +38,13 @@
 
 (defn get-disqus-path [path]
   (if (some #(re-seq (re-pattern %) path) old-style-posts)
-    (str/replace #"blog" "code")
+    (str (str/replace path #"blog" "code") "/")
     path))
+
+(defn prepare-post-path [post-name]
+  (-> post-name
+      (str/replace #"\.md$" "")
+      (str/replace #"(\d\d\d\d)-(\d\d)-(\d\d)-" "blog/$1/$2/$3/")))
 
 (defn layout-page [request [path page] {:keys [date title tags]}]
   (html5
@@ -48,9 +53,10 @@
       [:meta {:name "MobileOptimized" :content "320"}]      
       [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
       [:meta {:charset "utf-8"}]
-      [:title "Random.next()"]
+      [:title "Random.next()"]      
+      [:link {:rel "stylesheet" :href (link/file-path request "/css/theme.css")}]
       [:link {:rel "stylesheet" :href (link/file-path request "/css/gilbertw1.css")}]
-      [:link {:rel "stylesheet" :href (link/file-path request "/css/screen.css")}]
+      [:link {:rel "stylesheet" :href (link/file-path request "/css/zenburn-custom.css")}]
       [:link {:href "http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" :rel "stylesheet" :type "text/css"}]
       [:link {:href "http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" :rel "stylesheet" :type "text/css"}]
       [:link {:href "http://fonts.googleapis.com/css?family=Poller+One" :rel "stylesheet" :type "text/css"}]
@@ -95,8 +101,8 @@
                 [:h1 "Comments"
                   [:div#disqus_thread {:aria-live "polite"}]
                   [:script {:type "text/javascript"}
-                    (str "var disqus_shortname = 'bryangilbertsblogbryancodes';
-                          var disqus_url = 'http://bryangilbert.com"  "';
+                    (str "var disqus_shortname = 'bryangilbertsblog';
+                          var disqus_url = 'http://bryangilbert.com" (get-disqus-path (prepare-post-path path)) "';
                           (function() {
                               var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
                               dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
@@ -140,11 +146,6 @@
 (defn render-post-page [[path page]]
   (fn [req] (layout-page req [path (md/to-html (remove-meta page) pegdown-options)] (extract-meta path page))))
 
-(defn prepare-post-path [post-name]
-  (-> post-name
-      (str/replace #"\.md$" "")
-      (str/replace #"(\d\d\d\d)-(\d\d)-(\d\d)-" "blog/$1/$2/$3/")))
-
 (def post-meta-map 
   (let [raw-posts (stasis/slurp-directory "resources/posts" #".*\.md")]
     (zipmap (map prepare-post-path (keys raw-posts))
@@ -168,7 +169,11 @@
       [:time {:datetime date}
         [:span.month (format-month date)] " "
         [:span.day (format-day date)]
-        [:span.year (format-year date)]]]))
+        [:span.year (format-year date)]]
+      (when (not-empty tags)
+        [:span.categories "Tags: " (str/join ", " tags)])]))
+
+;<span class="categories">posted in <a class="category" href="/Blog/categories/appnexus/">appnexus</a></span>
 
 (defn archive-group [[year posts]]
   (let [sorted-posts (reverse (sort-by first posts))]
@@ -194,8 +199,18 @@
 (defn archive-page [posts]
   (fn [req] (layout-page req ["/archive" (archive-layout posts)] {:title "Archive"})))
 
+(defn is-old-post [post]
+  (some #(re-seq (re-pattern %) (first post)) old-style-posts))
+
+(defn create-old-links [posts]
+  (let [old-posts (filter is-old-post posts)]
+    (into {} 
+      (for [[path page] old-posts] 
+        [(str/replace path #"blog" "code") page]))))
+
 (defn create-dynamic-pages [posts]
   {"/index.html" (home-page posts)
+   "/blog/index.html" (home-page posts)
    "/archive/index.html" (archive-page posts)})
 
 (defn get-raw-pages []
@@ -204,7 +219,8 @@
       {:public (slurp-resource "public" :html)
        :partials (slurp-resource "partials" :partial)
        :posts post-pages
-       :dynamic (create-dynamic-pages post-pages)})))
+       :dynamic (create-dynamic-pages post-pages)
+       :old (create-old-links post-pages)})))
 
 (defn prepare-page [page req]
   (-> (if (string? page) page (page req))

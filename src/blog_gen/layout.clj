@@ -110,6 +110,12 @@
             [:div.pagination
               [:a {:href "/archive"} "Blog Archive"]]]]])))
 
+(defn- make-tag-link [tag]
+  [:a {:href (str "/tags/" tag)} tag])
+
+(defn- make-tag-links [tags]
+  (reduce #(conj %1 ", " (make-tag-link %2)) (make-tag-link (first tags)) (rest tags)))
+
 (defn- archive-post [{:keys [title date tags path]}]
   [:article
     [:h1 [:a {:href path} title]]
@@ -118,7 +124,7 @@
       [:span.day (dayf date)]
       [:span.year (yearf date)]]
     (when (not-empty tags)
-      [:span.categories "Tags: " (str/join ", " tags)])])
+      [:span.categories "Tags: " (make-tag-links tags)])])
 
 (defn- archive-group [[year posts]]
   (let [sorted-posts (reverse (sort-by :path posts))]
@@ -126,13 +132,40 @@
       [:h2 year]
       (map archive-post sorted-posts))))
 
-(defn archive [request posts]
+(defn archive-like [request posts title]
   (let [post-groups (->> posts (group-by #(t/year (:date %))) (sort-by first) reverse)]
     (main request
       [:div#content
         [:article.hentry {:role "article"}
           [:header
-            [:h1.entry-title "Archive"]]
+            [:h1.entry-title title]]
           [:div.body.entry-content
             [:div#blog-archives
               (map archive-group post-groups)]]]])))
+
+(defn archive [request posts]
+  (archive-like request posts "Archive"))
+
+(defn tag [request posts tag]
+  (archive-like request (filter #((set (:tags %)) tag) posts) tag))
+
+(defn tag-post [{:keys [path title]}]
+  [:article
+   [:h1 [:a {:href path} title]]])
+
+(defn tag-entry [tag posts]
+  (let [sorted-posts (reverse (sort-by :path posts))]
+    (cons
+      [:h2 tag]
+      (map tag-post sorted-posts))))
+
+(defn tags [request posts]
+  (let [unique-tags (->> posts (map :tags) flatten distinct sort)]
+    (main request
+      [:div#content
+        [:article.hentry {:role "article"}
+          [:header
+            [:h1.entry-title "Tags"]]
+          [:div.body.entry-content
+            [:div#blog-archives
+              (map #(tag-entry % posts) unique-tags)]]]])))

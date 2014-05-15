@@ -21,7 +21,16 @@
 (defn create-dynamic-pages [posts]
   {"/index.html" (fn [req] (layout/home req posts))
    "/blog/index.html" (fn [req] (layout/home req posts))
-   "/archive/index.html" (fn [req] (layout/archive req posts))})
+   "/archive/index.html" (fn [req] (layout/archive req posts))
+   "/tags/index.html" (fn [req] (layout/tags req posts))})
+
+(defn layout-tag-page [tag posts]
+  [(str "/tags/" tag "/index.html") (fn [req] (layout/tag req posts tag))])
+
+(defn create-tag-pages [posts]
+  (let [unique-tags (->> posts (map :tags) flatten distinct sort)
+        tags-layouts (map #(layout-tag-page % posts) unique-tags)]
+    (into {} tags-layouts)))
 
 (defn slurp-posts [dir]
   (stasis/slurp-directory (str "resources/" dir) #".*\.md$"))
@@ -36,6 +45,7 @@
       {:public (slurp-static "public")
        :posts (layout-posts posts)
        :dynamic (create-dynamic-pages posts)
+       :tags (create-tag-pages posts)
        :old (layout-posts old-posts)})))
 
 (defn prepare-page [page req]

@@ -73,37 +73,36 @@
 
 (defn post [request {:keys [title tags date path disqus-path content]}]
   (main request
-    [:div#main
-      [:div#content
-        [:article.hentry {:role "article"}
-          [:header
-            [:h1.entry-title title]
-            (when date
-              [:p.meta
-                [:time {:datetime date} (monthf date) " " (dayf date) [:span "th"] ", " (yearf date)]])]
-          [:div.body.entry-content content]
-          [:section
-            [:h1 "Comments"
-              [:div#disqus_thread {:aria-live "polite"}]
-              [:script {:type "text/javascript"}
-                (str "var disqus_shortname = 'bryangilbertsblog';
-                      var disqus_url = 'http://bryangilbert.com" disqus-path "';
-                      (function() {
-                          var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-                          dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-                          (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-                      })();")]
-              [:noscript "Please enable JavaScript to view the " [:a {:href "http://disqus.com/?ref_noscript"} "comments powered by Disqus."]]
-              [:a.dsq-brlink {:href "http://disqus.com"} "comments powered by " [:span.logo-disqus "Disqus"]]]]]]]))
+    [:div#content
+      [:article.hentry {:role "article"}
+        [:header
+          [:h1.entry-title title]
+          (when date
+            [:p.meta
+              [:time {:datetime date} (monthf date) " " (dayf date) [:span "th"] ", " (yearf date)]])]
+        [:div.body.entry-content content]
+        [:section
+          [:h1 "Comments"
+            [:div#disqus_thread {:aria-live "polite"}]
+            [:script {:type "text/javascript"}
+              (str "var disqus_shortname = 'bryangilbertsblog';
+                    var disqus_url = 'http://bryangilbert.com" disqus-path "';
+                    (function() {
+                        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+                        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+                        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+                    })();")]
+            [:noscript "Please enable JavaScript to view the " [:a {:href "http://disqus.com/?ref_noscript"} "comments powered by Disqus."]]
+            [:a.dsq-brlink {:href "http://disqus.com"} "comments powered by " [:span.logo-disqus "Disqus"]]]]]]))
 
 (defn home [request posts]
   (let [{:keys [title tags date path disqus-path content]} (->> posts (sort-by :date) reverse first)]
     (main request
-      [:div#main
-        [:div#content
-          [:article.hentry {:role "article"}
+      [:div#content
+        [:div.blog-index
+          [:article
             [:header
-              [:h1.entry-title title]
+              [:h1.entry-title [:a {:href path} title]]
               (when date
                 [:p.meta
                   [:time {:datetime date} (monthf date) " " (dayf date) [:span "th"] ", " (yearf date)]])]
@@ -130,11 +129,10 @@
 (defn archive [request posts]
   (let [post-groups (->> posts (group-by #(t/year (:date %))) (sort-by first) reverse)]
     (main request
-      [:div#main
-        [:div#content
-          [:article.hentry {:role "article"}
-            [:header
-              [:h1.entry-title "Archive"]]
-            [:div.body.entry-content
-              [:div#blog-archives
-                (map archive-group post-groups)]]]]])))
+      [:div#content
+        [:article.hentry {:role "article"}
+          [:header
+            [:h1.entry-title "Archive"]]
+          [:div.body.entry-content
+            [:div#blog-archives
+              (map archive-group post-groups)]]]])))

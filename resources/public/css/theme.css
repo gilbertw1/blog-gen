@@ -780,7 +780,7 @@ article > footer p.meta {
     background:#fff top left repeat-x
 }
 #content .blog-index article {
-    padding-top:2.5em
+    padding-top:0
 }
 #content .blog-index article header {
     background:none

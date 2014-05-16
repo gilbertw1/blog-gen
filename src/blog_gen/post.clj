@@ -24,7 +24,7 @@
 
 (defn- extract-tags [meta]
   (if-let [tag-str (->> meta (re-seq #"tags\s*:\s*\[(.*?)\]") first second)]
-    (map str/trim (str/split tag-str #","))
+    (map #(-> % str/trim str/lower-case) (str/split tag-str #","))
     []))
 
 (defn- extract-date [path]

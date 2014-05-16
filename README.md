@@ -5,7 +5,7 @@ A hand rolled static (blog) site generator writting in clojure using [stasis](ht
 
 This project powers http://bryangilbert.com and http://bryan.codes
 
-TODO -- Tag Handling, RSS Feed (w/ tags), Similar Posts
+TODO -- Similar Posts, Extract out some configuration
 
 Running
 -------

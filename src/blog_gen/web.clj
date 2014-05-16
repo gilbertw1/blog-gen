@@ -2,6 +2,7 @@
   (:require [blog-gen.highlight :as highlight]
             [blog-gen.post :as post]
             [blog-gen.layout :as layout]
+            [blog-gen.rss :as rss]
             [optimus.assets :as assets]
             [optimus.optimizations :as optimizations]
             [optimus.prime :as optimus]
@@ -27,10 +28,29 @@
 (defn layout-tag-page [tag posts]
   [(str "/tags/" tag "/index.html") (fn [req] (layout/tag req posts tag))])
 
+(defn get-unique-tags [posts]
+  (->> posts (map :tags) flatten distinct sort))
+
+(defn tag-posts [tag posts]
+  (filter #((-> % :tags set) tag) posts))
+
+(defn group-tags-posts [posts]
+  (let [unique-tags (get-unique-tags posts)]
+    (reduce #(assoc %1 %2 (tag-posts %2 posts)) {} unique-tags)))
+
 (defn create-tag-pages [posts]
-  (let [unique-tags (->> posts (map :tags) flatten distinct sort)
-        tags-layouts (map #(layout-tag-page % posts) unique-tags)]
+  (let [tags-posts (group-tags-posts posts)
+        tags-layouts (map #(apply layout-tag-page %) tags-posts)]
     (into {} tags-layouts)))
+
+(defn tag-rss [tag posts]
+  [(str "/" tag "-atom.xml") (fn [req] (rss/atom-xml posts))])
+
+(defn create-rss-pages [posts]
+  (let [tags-posts (group-tags-posts posts)
+        tags-rss (map #(apply tag-rss %) tags-posts)
+        main-rss ["/atom.xml" (fn [req] (rss/atom-xml posts))]]
+    (conj (into {} tags-rss) main-rss)))
 
 (defn slurp-posts [dir]
   (stasis/slurp-directory (str "resources/" dir) #".*\.md$"))
@@ -46,7 +66,8 @@
        :posts (layout-posts posts)
        :dynamic (create-dynamic-pages posts)
        :tags (create-tag-pages posts)
-       :old (layout-posts old-posts)})))
+       :old (layout-posts old-posts)
+       :rss (create-rss-pages posts)})))
 
 (defn prepare-page [page req]
   (-> (if (string? page) page (page req)) highlight/highlight-code-blocks))

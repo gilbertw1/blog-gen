@@ -147,7 +147,7 @@
   (archive-like request posts "Archive"))
 
 (defn tag [request posts tag]
-  (archive-like request (filter #((set (:tags %)) tag) posts) tag))
+  (archive-like request posts tag))
 
 (defn tag-post [{:keys [path title]}]
   [:article

@@ -11,7 +11,8 @@
                  [enlive "1.1.5"]
                  [clygments "0.1.1"]
                  [optimus "0.14.2"]
-                 [clj-time "0.7.0"]]
+                 [clj-time "0.7.0"]
+                 [org.clojure/data.xml "0.0.7"]]
   :ring {:handler blog-gen.web/app}
   :aliases {"build-site" ["run" "-m" "blog-gen.web/export"]}
   :profiles {:dev {:plugins [[lein-ring "0.8.10"]]}

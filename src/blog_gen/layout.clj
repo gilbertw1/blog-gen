@@ -14,10 +14,11 @@
 (defn yearf [date]
   (tf/unparse (tf/formatter "yyyy") date))
 
-
 (defn main [request content]
   (html5
     [:head
+      (when-let [uri (:uri request)]
+        [:link {:rel "canonical" :href (str "http://bryangilbert.com" uri)}])
       [:meta {:name "HandheldFriendly" :content "True"}]
       [:meta {:name "MobileOptimized" :content "320"}]
       [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]

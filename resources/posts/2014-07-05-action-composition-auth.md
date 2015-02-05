@@ -68,23 +68,23 @@ First thing we'll start with is the routes file, this will give us a sense of th
 
 ```scala
   # Application Base
-  GET   /                               controllers.Application.index
-  GET   /fbOAuth                          controllers.Application.fbOAuth
-  GET   /fbOAuthReturn                        controllers.Application.fbOAuthReturn(state: String, code: String)
+  GET   /                                      controllers.Application.index
+  GET   /fbOAuth                               controllers.Application.fbOAuth
+  GET   /fbOAuthReturn                         controllers.Application.fbOAuthReturn(state: String, code: String)
 
   # Companies
-  GET   /companies                          controllers.Companies.list
-  GET   /companies/create                       controllers.Companies.create()
-  GET   /companies/:id                        controllers.Companies.view(id: Long)
-  GET   /companies/:id/update                     controllers.Companies.update(id: Long)
-  GET   /companies/:id/admin                    controllers.Companies.admin(id: Long)
+  GET   /companies                             controllers.Companies.list
+  GET   /companies/create                      controllers.Companies.create()
+  GET   /companies/:id                         controllers.Companies.view(id: Long)
+  GET   /companies/:id/update                  controllers.Companies.update(id: Long)
+  GET   /companies/:id/admin                   controllers.Companies.admin(id: Long)
 
   # Surveys
-  GET   /companies/:cid/surveys                   controllers.Surveys.list(cid: Long)
-  GET   /companies/:cid/surveys/create                controllers.Surveys.create(cid: Long)
-  GET   /companies/:cid/surveys/:id                 controllers.Surveys.view(cid: Long, id: Long)
-  GET   /companies/:cid/surveys/:id/update              controllers.Surveys.update(cid: Long, id: Long)
-  GET   /companies/:cid/surveys/:id/fillOut             controllers.Surveys.fillOut(cid: Long, id: Long)  
+  GET   /companies/:cid/surveys                controllers.Surveys.list(cid: Long)
+  GET   /companies/:cid/surveys/create         controllers.Surveys.create(cid: Long)
+  GET   /companies/:cid/surveys/:id            controllers.Surveys.view(cid: Long, id: Long)
+  GET   /companies/:cid/surveys/:id/update     controllers.Surveys.update(cid: Long, id: Long)
+  GET   /companies/:cid/surveys/:id/fillOut    controllers.Surveys.fillOut(cid: Long, id: Long)  
 ```
 
 
@@ -103,12 +103,12 @@ As with all of the action composers we will create, they will be created in a tr
 ```scala
   def FacebookAuthenticated(f: FacebookAuthenticatedRequest => Result) = {
     Action { request =>
-      val session = request.session                       // 1
-      Facebook.retrieveFacebookUserFromSession(session) match {         // 2
+      val session = request.session                                      // 1
+      Facebook.retrieveFacebookUserFromSession(session) match {          // 2
         case Some(fbUserInfo: FacebookUser) => 
-          f(FacebookAuthenticatedRequest(fbUserInfo, request))      // 3
+          f(FacebookAuthenticatedRequest(fbUserInfo, request))           // 3
         case None => 
-          val newSession = session + ("PostOAuthUrl" -> request.uri)    // 4
+          val newSession = session + ("PostOAuthUrl" -> request.uri)     // 4
           Redirect(routes.Application.fbOAuth()).withSession(newSession)
       }
     }

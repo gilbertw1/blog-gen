@@ -5,13 +5,13 @@
             [clj-time.format :as tf]
             [clj-time.core :as t]))
 
-(defn monthf [date] 
+(defn monthf [date]
   (tf/unparse (tf/formatter "MMM") date))
 
-(defn dayf [date] 
+(defn dayf [date]
   (tf/unparse (tf/formatter "dd") date))
 
-(defn yearf [date] 
+(defn yearf [date]
   (tf/unparse (tf/formatter "yyyy") date))
 
 
@@ -19,10 +19,10 @@
   (html5
     [:head
       [:meta {:name "HandheldFriendly" :content "True"}]
-      [:meta {:name "MobileOptimized" :content "320"}]      
+      [:meta {:name "MobileOptimized" :content "320"}]
       [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
       [:meta {:charset "utf-8"}]
-      [:title "Random.next()"]      
+      [:title "Random.next()"]
       [:link {:rel "stylesheet" :href (link/file-path request "/css/theme.css")}]
       [:link {:rel "stylesheet" :href (link/file-path request "/css/zenburn-custom.css")}]
       [:link {:href "http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" :rel "stylesheet" :type "text/css"}]
@@ -43,18 +43,18 @@
 
         ga('create', 'UA-42597902-1', 'bryangilbert.com');
         ga('send', 'pageview');"]
-      
+
     [:body
      [:a {:href "https://github.com/gilbertw1"}
         [:img {:style "position: absolute; top: 0; right: 0; border: 0;"
                :src "https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png"
                :alt "Fork me on GitHub"}]]
-     
+
       [:header {:role "banner"}
-        [:hgroup 
+        [:hgroup
           [:h1
             [:a {:href "/"} "Bryan Gilbert - Random.next()"]]]]
-      
+
       [:nav {:role "navigation"}
         [:ul.main-navigation
           [:li [:a {:href "/"} "Blog"]]
@@ -62,11 +62,11 @@
           [:li [:a {:href "http://twitter.com/bryangilbert"} "Twitter"]]
           [:li [:a {:href "http://linkedin.com/in/williamgilbert/"} "LinkedIn"]]
           [:li [:a {:href "/resume.html"} "Resume"]]]]
-      
+
       [:div#main content]
-      
+
       [:footer {:role "contentinfo"}
-        [:p 
+        [:p
           "Website Copyright © " (t/year (t/now)) " - Bryan Gilbert &nbsp; | &nbsp; "
           [:span.credit "Powered by " [:a {:href "http://github.com/gilbertw1/blog-gen"} " a Little Side Project"]
           " &nbsp; | &nbsp; Mostly Themed with " [:a {:href "https://github.com/TheChymera/Koenigspress"} "Königspress"]]]]]))
@@ -94,6 +94,11 @@
                     })();")]
             [:noscript "Please enable JavaScript to view the " [:a {:href "http://disqus.com/?ref_noscript"} "comments powered by Disqus."]]
             [:a.dsq-brlink {:href "http://disqus.com"} "comments powered by " [:span.logo-disqus "Disqus"]]]]]]))
+
+(defn redirect [request page]
+  (html5
+    [:head
+     [:meta {:http-equiv "refresh" :content (str "0; url=" page)}]]))
 
 (defn home [request posts]
   (let [{:keys [title tags date path disqus-path content]} (->> posts (sort-by :date) reverse first)]

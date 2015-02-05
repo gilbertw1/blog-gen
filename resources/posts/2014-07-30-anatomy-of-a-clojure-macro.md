@@ -111,7 +111,7 @@ example the "+" function exists in the "clojure.core" namespace, and the symbols
 You may be asking at this point, how does syntax quote help out with conditional evaluation? Well there two additional
 forms that can be used within a syntax-quote that can turn it into a code "template" of sorts, unquote and splicing unquote.
 
-#### Unquote
+### Unquote
 
 Within a syntax quoted block we can conditionally unquote expressions using the tilde character ```~```. This basically allows us to cherry pick which expressions 
 are evaluated and all the rest are left unevaluated. Revisiting our earlier example we can eliminate need to manually construct a list of symbols.
@@ -133,7 +133,7 @@ is 5, instead of the symbol x itself. This works as expected with arbitrary expr
 
 This is a nice way to denote which symbols to evaluate and which to not, however there is another helpful form that we can use within a syntax quote.
 
-#### Splicing Unquote
+### Splicing Unquote
 
 The splicing unquote form ```~@``` allows us to evaluate the expression exactly as the normal unquote does, however it expects the result of the evaluation
 to be a list or sequence which it then splices into the outer list at the position it appeared. This sounds complicated, but an example should help show exactly
@@ -254,7 +254,8 @@ at what the resulting code should look like.
     (+ 3 _)     
     (- 50 _)    
     (/ _ 2))    
-   ;; After (macroexpansion)
+  
+  ;; After (macroexpansion)
   (let [init 1]
     (let [res0 (+ init 2)]
       (let [res1 (+ 3 res0)]
@@ -294,7 +295,8 @@ First thing we know we need to do, is replace an underscore with a value. Let's 
     (if (= element '_)
       val
       element))
-   (replace-if-underscore '_ 1) ; => 1
+  
+  (replace-if-underscore '_ 1) ; => 1
   (replace-if-underscore '+ 1) ; => +
 ```
 
@@ -304,7 +306,8 @@ otherwise we just return the element since we don't want to replace it. Now that
 ```clj
   (defn replace-underscores [form val]
     (map #(replace-if-underscore % val) form))
-   (replace-underscores '(+ 2 _) 1) ; => (+ 2 1)
+  
+  (replace-underscores '(+ 2 _) 1) ; => (+ 2 1)
   (replace-underscores '(+ 2 3) 1) ; => (+ 2 3)
 ```
 

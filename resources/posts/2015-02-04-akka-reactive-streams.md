@@ -5,7 +5,7 @@ tags : [scala, akka, akka-http, akka-stream]
 
 If you've been following recent developments around Akka, then I'm sure you've heard about the [Reactive Streams Specification](http://www.reactive-streams.org/) and Akka's adoption of it in the form of the akka-stream module. Akka's implementation of reactive streams provides a useful set of abstractions to make thinking about and working with stream processing much simpler and more robust. This coupled with Akka's partnership with Mathias Doenitz of Spray to create an http module (while heavily leveraging akka-stream) makes for a particularly exciting set of developments.
 
-In this post, I hope to provide a good foundation to understand the Reactive Streams specification and how Akka implements it in akka-stream. I do not plan on covering any of the DSL provided with akka-stream, but instead will be focusing on a lower level look at it's core abstractions in an effort to gain a better understanding of how it works. I plan on turning this into a set of three posts, with the next post building on these fundamentals with the Flow DSL, and finally looking at akka-http and how to create a proper reactive streams among multiple servers using HTTP. All code in this post can be found [in this repo](TODO).
+In this post, I hope to provide a good foundation to understand the Reactive Streams specification and how Akka implements it in akka-stream. I do not plan on covering any of the DSL provided with akka-stream, but instead will be focusing on a lower level look at it's core abstractions in an effort to gain a better understanding of how it works. I plan on turning this into a set of three posts, with the next post building on these fundamentals with the Flow DSL, and finally looking at akka-http and how to create a proper reactive streams among multiple servers using HTTP. All code in this post can be found [in this repo](https://github.com/gilbertw1/akka-http-stream-example).
 
 Let's start by taking a look at the Reactive Streams Specification.
 
@@ -444,4 +444,4 @@ Running the above will result in the slow subscriber receiving and printing doub
 
 And there you have it! All the tools required to create a reactive stream using akka-stream. In the next post, I'll cover how to condense most of this code into just a few lines using the Flow DSL.
 
-All of the code from this post [can be found here](TODO). Thanks for reading!
+All of the code from this post [can be found here](https://github.com/gilbertw1/akka-http-stream-example). Thanks for reading!

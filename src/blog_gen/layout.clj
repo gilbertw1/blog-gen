@@ -62,7 +62,8 @@
           [:li [:a {:href "/archive"} "Archive"]]
           [:li [:a {:href "http://twitter.com/bryangilbert"} "Twitter"]]
           [:li [:a {:href "http://linkedin.com/in/williamgilbert/"} "LinkedIn"]]
-          [:li [:a {:href "/resume.html"} "Resume"]]]]
+          [:li [:a {:href "/resume.html"} "Resume"]]
+          [:li [:a {:href "/atom.xml"} "RSS"]]]]
 
       [:div#main content]
 
